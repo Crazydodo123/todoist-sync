@@ -1,4 +1,8 @@
 import todo from "./todo.mjs"
+import google from "./google.mjs"
 
-const taskList = await todo.getAllTasks()
+const todoList = await todo.getAllTasks()
 
+const googleTasks = await google.getProjects()
+
+console.log(googleTasks)
