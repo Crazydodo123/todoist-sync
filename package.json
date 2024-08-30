@@ -1,5 +1,7 @@
 {
   "dependencies": {
-    "@doist/todoist-api-typescript": "^3.0.3"
+    "@doist/todoist-api-typescript": "^3.0.3",
+    "axios": "^1.7.5",
+    "dotenv": "^16.4.5"
   }
 }
