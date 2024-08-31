@@ -9,6 +9,36 @@ const getProjects = async () => {
     return await api.getProjects()
 }
 
+const addProject = async (name) => {
+    return await api.addProject({ name })
+}
+
+const deleteProject = async (project) => {
+    const response = api.deleteProject(project.id)
+    return response.data
+}
+
+const getTasksFromProjectId = async (projectId) => {
+    const tasks = await api.getTasks()
+    return tasks.filter(task => task.projectId == projectId)
+}
+
+const getTasksFromProjectName = async (projectName) => {
+    const todoProjects = await getProjects()
+    const todoProject = todoProjects.filter(todoProject => todoProject.name === projectName)[0]
+    return await getTasksFromProjectId(todoProject.id)
+}
+
+const addTaskToProject = async (task, projectId) => {
+    const response = api.addTask({ ...task, projectId })
+    return response.data
+}
+
+const completeTask = async (task) => {
+    const response = api.closeTask(task.id)
+    return response.data
+}
+
 const getAllTasks = async () => {
     const projects = await getProjects()
     let taskList = {}
@@ -16,7 +46,7 @@ const getAllTasks = async () => {
     for (const project of projects) {
         taskList[project.name] = []
 
-        const tasks = await api.getTasks({ projectId: project.id})
+        const tasks = getTasksFromProjectId(project.id)
         tasks.forEach(task => {
             taskList[project.name].push(task.content)
         })
@@ -26,4 +56,4 @@ const getAllTasks = async () => {
 }
 
 
-export default { getProjects, getAllTasks }
+export default { getProjects, addProject, deleteProject, getTasksFromProjectId, getTasksFromProjectName, getAllTasks, completeTask, addTaskToProject }

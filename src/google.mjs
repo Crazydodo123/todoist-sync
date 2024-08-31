@@ -43,6 +43,16 @@ const getProjects = async () => {
     return response.data.items
 }
 
+const addProject = async (name) => {
+    const access_token = await getAccessToken()
+
+    const response = await axios.post("https://tasks.googleapis.com/tasks/v1/users/@me/lists", { title: name }, {
+        headers: {"Authorization" : `Bearer ${access_token}`}
+    })
+
+    return response.data
+}
+
 const getTasksFromProjectId = async (id) => {
     const access_token = await getAccessToken()
 
@@ -50,7 +60,23 @@ const getTasksFromProjectId = async (id) => {
         headers: {"Authorization" : `Bearer ${access_token}`}
     })
 
+    return response.data.items
+}
+
+const getTasksFromProjectName = async (projectName) => {
+    const googleProjects = await getProjects()
+    const googleProject = googleProjects.filter(googleProject => googleProject.title === projectName)[0]
+    return await getTasksFromProjectId(googleProject.id)
+}
+
+const addTaskToProject = async (task, projectId) => {
+    const access_token = await getAccessToken()
+
+    const response = axios.post(`https://tasks.googleapis.com/tasks/v1/lists/${projectId}/tasks`, task, {
+        headers: {"Authorization" : `Bearer ${access_token}`}
+    })
+
     return response.data
 }
 
-export default { getAccessToken, getProjects, getTasksFromProjectId }
+export default { getAccessToken, getProjects, addProject, getTasksFromProjectId, getTasksFromProjectName, addTaskToProject }
