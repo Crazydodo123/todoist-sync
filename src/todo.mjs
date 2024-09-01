@@ -1,5 +1,6 @@
 import { TodoistApi } from "@doist/todoist-api-typescript"
 import { configDotenv } from "dotenv"
+import axios from "axios"
 
 configDotenv({ path: '../.env'})
 
@@ -15,27 +16,6 @@ const addProject = async (name) => {
 
 const deleteProject = async (project) => {
     const response = api.deleteProject(project.id)
-    return response.data
-}
-
-const getTasksFromProjectId = async (projectId) => {
-    const tasks = await api.getTasks()
-    return tasks.filter(task => task.projectId == projectId)
-}
-
-const getTasksFromProjectName = async (projectName) => {
-    const todoProjects = await getProjects()
-    const todoProject = todoProjects.filter(todoProject => todoProject.name === projectName)[0]
-    return await getTasksFromProjectId(todoProject.id)
-}
-
-const addTaskToProject = async (task, projectId) => {
-    const response = api.addTask({ ...task, projectId })
-    return response.data
-}
-
-const completeTask = async (task) => {
-    const response = api.closeTask(task.id)
     return response.data
 }
 
@@ -55,5 +35,49 @@ const getAllTasks = async () => {
     return taskList
 }
 
+const findTaskByTaskName = async (taskName, projectId, projects) => {
+    const project = projects.find(project => project.id === projectId)
+    if (!project) return undefined
+    
+    const task = project.tasks.find(task => task.content === taskName)
 
-export default { getProjects, addProject, deleteProject, getTasksFromProjectId, getTasksFromProjectName, getAllTasks, completeTask, addTaskToProject }
+    return task
+}
+
+const getTasksFromProjectId = async (projectId) => {
+    const tasks = await api.getTasks()
+    return tasks.filter(task => task.projectId == projectId)
+}
+
+const getTasksFromProjectName = async (projectName) => {
+    const todoProjects = await getProjects()
+    const todoProject = todoProjects.filter(todoProject => todoProject.name === projectName)[0]
+    return await getTasksFromProjectId(todoProject.id)
+}
+
+const checkCompleted = async (task) => {
+    try {
+        await api.reopenTask(task.id); await api.closeTask(task.id)
+        return true
+    } catch {
+        return false
+    }
+}
+
+const addTaskToProject = async (task, projectId) => {
+    const response = api.addTask({ ...task, projectId })
+    return response.data
+}
+
+const completeTask = async (task) => {
+    const response = api.closeTask(task.id)
+    return response.data
+}
+
+const deleteTask = async (task) => {
+    const response = api.deleteTask(task.id)
+    return response.data
+}
+
+
+export default { getProjects, addProject, deleteProject, getTasksFromProjectId, getTasksFromProjectName, getAllTasks, completeTask, checkCompleted, deleteTask, addTaskToProject, findTaskByTaskName }

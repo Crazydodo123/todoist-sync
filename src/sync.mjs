@@ -1,16 +1,45 @@
 import todo from "./todo.mjs"
 import google from "./google.mjs"
+
 import { configDotenv } from "dotenv"
+import fs from 'fs'
+import readline from "readline"
 
 configDotenv({ path: '../.env'})
+readline.emitKeypressEvents(process.stdin);
 
-let PAST_TODO_PROJECTS = await todo.getProjects()
-let PAST_GOOGLE_PROJECTS = await google.getProjects()
+let PAST_TODO_PROJECTS = JSON.parse(fs.readFileSync('todo.json', 'utf8'))
+let PAST_GOOGLE_PROJECTS = JSON.parse(fs.readFileSync('google.json', 'utf8'))
 
+const saveLocalProjects = async () => {
+    let todoProjects = await todo.getProjects()
+    let googleProjects = await google.getProjects()
 
-const isCreated = (project, pastProjects) => {
+    for (const todoProject of todoProjects) {
+        const todoTasks = await todo.getTasksFromProjectId(todoProject.id)
+        todoProject.tasks = todoTasks
+    }
+    
+    for (const googleProject of googleProjects) {
+        const googleTasks = await google.getTasksFromProjectId(googleProject.id)
+        googleProject.tasks = googleTasks
+    }
+    
+    PAST_TODO_PROJECTS = todoProjects
+    PAST_GOOGLE_PROJECTS = googleProjects
+
+    return todoProjects, googleProjects
+}
+
+const isCreatedProject = (project, pastProjects) => {
     const pastProjectIds = pastProjects.map(pastProject => pastProject.id)
     return !(pastProjectIds.includes(project.id))
+}
+
+const isCreatedTask = (task, pastProjects, projectId) => {
+    const pastTasks = pastProjects.find(pastProject => pastProject.id === projectId).tasks
+    const pastTaskIds = pastTasks.map(pastTask => pastTask.id)
+    return !(pastTaskIds.includes(task.id))
 }
 
 const syncProjects = async () => {
@@ -24,7 +53,7 @@ const syncProjects = async () => {
     for (const todoProject of todoProjects) {
         if (!googleProjectNames.includes(todoProject.name)) {
 
-            if (isCreated(todoProject, PAST_TODO_PROJECTS)) {
+            if (isCreatedProject(todoProject, PAST_TODO_PROJECTS)) {
                 await google.addProject(todoProject.name)
             } else {
                 await todo.deleteProject(todoProject)
@@ -36,12 +65,13 @@ const syncProjects = async () => {
     // Updating Todoist Projects
     for (const googleProject of googleProjects) {
         if (!todoProjectNames.includes(googleProject.title)) {
-            await todo.addProject(googleProject.title)
+            if (isCreatedProject(googleProject, PAST_GOOGLE_PROJECTS)) {
+                await todo.addProject(googleProject.title)
+            } else {
+                await google.deleteProject(googleProject)
+            }
         }
     }
-
-    process.env.TODO_PROJECTS = await todo.getProjects()
-    process.env.GOOGLE_PROJECTS = await google.getProjects()
 
     return await todo.getProjects()
 }
@@ -56,29 +86,51 @@ const syncTasksForProject = async (name) => {
     const googleProject = googleProjects.filter(googleProject => googleProject.title === name)[0]
     const googleTasks = await google.getTasksFromProjectId(googleProject.id)
     const googleTasksNames = googleTasks.map(googleTask => googleTask.title)
-    
 
     for (const todoTask of todoTasks) {
         if (!googleTasksNames.includes(todoTask.content)) {
-            await google.addTaskToProject({
-                title: todoTask.content,
-                notes: todoTask.description,
-                status: todoTask.isCompleted ? "completed" : "needsAction",
-                due: todoTask.due ? new Date(todoTask.due.date).toISOString() : null
-            }, googleProject.id)
+            if (isCreatedTask(todoTask, PAST_TODO_PROJECTS, todoProject.id)) {
+                await google.addTaskToProject({
+                    title: todoTask.content,
+                    notes: todoTask.description,
+                    status: todoTask.isCompleted ? "completed" : "needsAction",
+                    due: todoTask.due ? new Date(todoTask.due.date).toISOString() : null
+                }, googleProject.id)
+            } else {
+                const pastGoogleTask = await google.findTaskByTaskName(todoTask.content, googleProject.id, PAST_GOOGLE_PROJECTS)
+                
+                if (pastGoogleTask && await google.checkCompleted(pastGoogleTask, googleProject)) {
+                    await todo.completeTask(todoTask)
+                } else {
+                    await todo.deleteTask(todoTask)
+                }
+            }
         }
     }
 
     for (const googleTask of googleTasks) {
         if (!todoTasksNames.includes(googleTask.title)) {
-            await todo.addTaskToProject({
-                content: googleTask.title,
-                description: googleTask.notes,
-                isCompleted: googleTask.status === "completed",
-                due_date: String(googleTask.due).slice(0, 10)
-            }, todoProject.id)
+            if (isCreatedTask(googleTask, PAST_GOOGLE_PROJECTS, googleProject.id)) {
+                await todo.addTaskToProject({
+                    content: googleTask.title,
+                    description: googleTask.notes,
+                    isCompleted: googleTask.status === "completed",
+                    due_date: googleTask.due ? String(googleTask.due).slice(0, 10) : null
+                }, todoProject.id)
+            } else {
+                const pastTodoTask = await todo.findTaskByTaskName(googleTask.title, todoProject.id, PAST_TODO_PROJECTS)
+                if (pastTodoTask && await todo.checkCompleted(pastTodoTask, todoProject)) {
+                    await google.completeTask(googleTask, googleProject)
+                } else {
+                    await google.deleteTask(googleTask, googleProject)
+                }
+            }
+
         }
     }
+
+    PAST_TODO_PROJECTS.find(project => project.id === todoProject.id).tasks = await todo.getTasksFromProjectId(todoProject.id)
+    PAST_GOOGLE_PROJECTS.find(project => project.id === googleProject.id).tasks = await google.getTasksFromProjectId(googleProject.id)
 }
 
 const syncAllTasks = async () => {
@@ -90,4 +142,24 @@ const syncAllTasks = async () => {
     }
 }
 
-await syncProjects()
+const executeTask = async () => {
+    console.log("Syncing...")
+    await syncProjects()
+    await syncAllTasks()
+    await saveLocalProjects()
+    console.log("Syncing complete")
+}
+
+process.stdin.on('keypress', (_, key) => {
+    if (key && key.name == 'q') {
+        console.log('Exiting...')
+        fs.writeFileSync('todo.json', JSON.stringify(PAST_TODO_PROJECTS, null, 2))
+        fs.writeFileSync('google.json', JSON.stringify(PAST_GOOGLE_PROJECTS, null, 2))
+        process.exit()
+    }
+})
+
+// await executeTask()
+// setInterval(executeTask, 20000)
+
+

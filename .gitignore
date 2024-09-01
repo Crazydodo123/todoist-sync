@@ -1,4 +1,4 @@
 node_modules
 .env
 
-/src/access-token.txt
+/src/*.json

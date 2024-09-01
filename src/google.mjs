@@ -53,6 +53,16 @@ const addProject = async (name) => {
     return response.data
 }
 
+const deleteProject = async (project) => {
+    const access_token = await getAccessToken()
+
+    const response = await axios.delete(`https://tasks.googleapis.com/tasks/v1/users/@me/lists/${project.id}`, {
+        headers: {"Authorization" : `Bearer ${access_token}`}
+    })
+
+    return response.data
+}
+
 const getTasksFromProjectId = async (id) => {
     const access_token = await getAccessToken()
 
@@ -60,23 +70,62 @@ const getTasksFromProjectId = async (id) => {
         headers: {"Authorization" : `Bearer ${access_token}`}
     })
 
-    return response.data.items
+    return response.data.items.filter(task => task.status !== 'completed')
 }
 
 const getTasksFromProjectName = async (projectName) => {
     const googleProjects = await getProjects()
     const googleProject = googleProjects.filter(googleProject => googleProject.title === projectName)[0]
-    return await getTasksFromProjectId(googleProject.id)
+    return await getTasksFromProjectId(googleProject.id).filter(task => task.status !== 'completed')
 }
 
 const addTaskToProject = async (task, projectId) => {
     const access_token = await getAccessToken()
 
-    const response = axios.post(`https://tasks.googleapis.com/tasks/v1/lists/${projectId}/tasks`, task, {
+    const response = await axios.post(`https://tasks.googleapis.com/tasks/v1/lists/${projectId}/tasks`, task, {
         headers: {"Authorization" : `Bearer ${access_token}`}
     })
 
     return response.data
 }
 
-export default { getAccessToken, getProjects, addProject, getTasksFromProjectId, getTasksFromProjectName, addTaskToProject }
+const checkCompleted = async (task, project) => {
+    const access_token = await getAccessToken()
+
+    const response = await axios.get(`https://tasks.googleapis.com/tasks/v1/lists/${project.id}/tasks/${task.id}`, {
+        headers: {"Authorization" : `Bearer ${access_token}`}
+    })
+
+    return !!response.data.completed
+}
+
+const findTaskByTaskName = async (taskName, projectId, projects) => {
+    const project = projects.find(project => project.id === projectId)
+    if (!project) return undefined
+    
+    const task = project.tasks.find(task => task.title === taskName)
+
+    return task
+}
+
+const completeTask = async (task, project) => {
+    const access_token = await getAccessToken()
+
+    const response = await axios.patch(`https://tasks.googleapis.com/tasks/v1/lists/${project.id}/tasks/${task.id}`, { status: "completed" }, {
+        headers: {"Authorization" : `Bearer ${access_token}`}
+    })
+
+    return response.data
+}
+
+const deleteTask = async (task, project) => {
+    const access_token = await getAccessToken()
+
+    const response = await axios.delete(`https://tasks.googleapis.com/tasks/v1/lists/${project.id}/tasks/${task.id}`, {
+        headers: {"Authorization" : `Bearer ${access_token}`}
+    })
+
+    return response.data
+}
+
+export default { getAccessToken, getProjects, addProject, deleteProject, getTasksFromProjectId, getTasksFromProjectName, addTaskToProject, checkCompleted, findTaskByTaskName, completeTask, deleteTask }
