@@ -1,6 +1,5 @@
 import { TodoistApi } from "@doist/todoist-api-typescript"
 import { configDotenv } from "dotenv"
-import axios from "axios"
 
 configDotenv({ path: '../.env'})
 
@@ -74,10 +73,15 @@ const completeTask = async (task) => {
     return response.data
 }
 
+const updateTask = async (updatedTask) => {
+    const response = api.updateTask(updatedTask.id, updatedTask)
+    return response.data
+}
+
 const deleteTask = async (task) => {
     const response = api.deleteTask(task.id)
     return response.data
 }
 
 
-export default { getProjects, addProject, deleteProject, getTasksFromProjectId, getTasksFromProjectName, getAllTasks, completeTask, checkCompleted, deleteTask, addTaskToProject, findTaskByTaskName }
+export default { getProjects, addProject, deleteProject, getTasksFromProjectId, getTasksFromProjectName, getAllTasks, completeTask, checkCompleted, updateTask, deleteTask, addTaskToProject, findTaskByTaskName }

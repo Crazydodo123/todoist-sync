@@ -76,6 +76,31 @@ const syncProjects = async () => {
     return await todo.getProjects()
 }
 
+const syncTasks = async (todoTask, googleTask, googleProject) => {
+    if ((googleTask.notes || "") !== todoTask.description) {
+        const pastGoogleTask = await google.findTaskByTaskName(googleTask.title, googleProject.id, PAST_GOOGLE_PROJECTS)
+        if (googleTask.notes === pastGoogleTask.notes) {
+            const updatedGoogleTask = { ...googleTask, notes: todoTask.description }
+            await google.updateTask(updatedGoogleTask, googleProject) 
+        } else {
+            const updatedTodoTask = { ...todoTask, description: todoTask.notes }
+            await todo.updateTask(updatedTodoTask) 
+        }
+    }
+
+    if (googleTask.due !== (todoTask.due ? new Date(todoTask.due.date).toISOString() : null)) {
+        const pastGoogleTask = await google.findTaskByTaskName(googleTask.title, googleProject.id, PAST_GOOGLE_PROJECTS)
+        if (googleTask.due === pastGoogleTask.due) {
+            const updatedGoogleTask = { ...googleTask, due: todoTask.due ? new Date(todoTask.due.date).toISOString() : null }
+            await google.updateTask(updatedGoogleTask, googleProject) 
+        } else {
+            const updatedTodoTask = { ...todoTask, due: googleTask.due ? String(googleTask.due).slice(0, 10) : null }
+            await todo.updateTask(updatedTodoTask)
+        }
+    }
+}
+
+
 const syncTasksForProject = async (name) => {
     const todoProjects = await todo.getProjects()
     const todoProject = todoProjects.filter(todoProject => todoProject.name === name)[0]
@@ -104,6 +129,11 @@ const syncTasksForProject = async (name) => {
                 } else {
                     await todo.deleteTask(todoTask)
                 }
+            }
+        } else {
+            const googleTask = googleTasks.find(task => task.title === todoTask.content)
+            if (googleTask.notes !== todoTask.description || googleTask.due !== new Date(todoTask.due.date).toISOString()) {
+                await syncTasks(todoTask, googleTask, googleProject)
             }
         }
     }
@@ -159,7 +189,7 @@ process.stdin.on('keypress', (_, key) => {
     }
 })
 
-// await executeTask()
-// setInterval(executeTask, 20000)
+await executeTask()
+setInterval(executeTask, 20000)
 
 

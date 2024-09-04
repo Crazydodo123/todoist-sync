@@ -99,7 +99,7 @@ const checkCompleted = async (task, project) => {
     return !!response.data.completed
 }
 
-const findTaskByTaskName = async (taskName, projectId, projects) => {
+const findTaskByTaskName = (taskName, projectId, projects) => {
     const project = projects.find(project => project.id === projectId)
     if (!project) return undefined
     
@@ -118,6 +118,16 @@ const completeTask = async (task, project) => {
     return response.data
 }
 
+const updateTask = async (updatedTask, project) => {
+    const access_token = await getAccessToken()
+
+    const response = await axios.put(`https://tasks.googleapis.com/tasks/v1/lists/${project.id}/tasks/${updatedTask.id}`, updatedTask, {
+        headers: {"Authorization" : `Bearer ${access_token}`}
+    })
+
+    return response.data
+}
+
 const deleteTask = async (task, project) => {
     const access_token = await getAccessToken()
 
@@ -128,4 +138,4 @@ const deleteTask = async (task, project) => {
     return response.data
 }
 
-export default { getAccessToken, getProjects, addProject, deleteProject, getTasksFromProjectId, getTasksFromProjectName, addTaskToProject, checkCompleted, findTaskByTaskName, completeTask, deleteTask }
+export default { getAccessToken, getProjects, addProject, deleteProject, getTasksFromProjectId, getTasksFromProjectName, addTaskToProject, checkCompleted, findTaskByTaskName, completeTask, updateTask, deleteTask }
