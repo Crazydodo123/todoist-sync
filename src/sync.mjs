@@ -81,7 +81,7 @@ const syncProjects = async () => {
 const syncTasks = async (todoTask, googleTask, googleProject) => {
     if ((googleTask.notes || "") !== todoTask.description) {
         const pastGoogleTask = await google.findTaskByTaskName(googleTask.title, googleProject.id, PAST_GOOGLE_PROJECTS)
-        if (googleTask.notes === pastGoogleTask.notes) {
+        if (!pastGoogleTask || googleTask.notes === pastGoogleTask.notes) {
             const updatedGoogleTask = { ...googleTask, notes: todoTask.description }
             await google.updateTask(updatedGoogleTask, googleProject) 
         } else {
@@ -92,7 +92,7 @@ const syncTasks = async (todoTask, googleTask, googleProject) => {
 
     if (googleTask.due !== (todoTask.due ? new Date(todoTask.due.date).toISOString() : null)) {
         const pastGoogleTask = await google.findTaskByTaskName(googleTask.title, googleProject.id, PAST_GOOGLE_PROJECTS)
-        if (googleTask.due === pastGoogleTask.due) {
+        if (!pastGoogleTask || googleTask.due === pastGoogleTask.due) {
             const updatedGoogleTask = { ...googleTask, due: todoTask.due ? new Date(todoTask.due.date).toISOString() : null }
             await google.updateTask(updatedGoogleTask, googleProject) 
         } else {
