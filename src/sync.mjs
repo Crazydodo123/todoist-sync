@@ -161,8 +161,18 @@ const syncTasksForProject = async (name) => {
         }
     }
 
-    PAST_TODO_PROJECTS.find(project => project.id === todoProject.id).tasks = await todo.getTasksFromProjectId(todoProject.id)
-    PAST_GOOGLE_PROJECTS.find(project => project.id === googleProject.id).tasks = await google.getTasksFromProjectId(googleProject.id)
+    try {
+        PAST_TODO_PROJECTS.find(project => project.id === todoProject.id).tasks = await todo.getTasksFromProjectId(todoProject.id)
+    } catch {
+        PAST_TODO_PROJECTS.push(todoProject)
+        PAST_TODO_PROJECTS.find(project => project.id === todoProject.id).tasks = await todo.getTasksFromProjectId(todoProject.id)
+    }
+    try {
+        PAST_GOOGLE_PROJECTS.find(project => project.id === googleProject.id).tasks = await google.getTasksFromProjectId(googleProject.id)
+    } catch {
+        PAST_GOOGLE_PROJECTS.push(googleProject)
+        PAST_GOOGLE_PROJECTS.find(project => project.id === googleProject.id).tasks = await google.getTasksFromProjectId(googleProject.id)
+    }
 }
 
 const syncAllTasks = async () => {
