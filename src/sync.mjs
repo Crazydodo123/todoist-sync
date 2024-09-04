@@ -37,9 +37,11 @@ const isCreatedProject = (project, pastProjects) => {
 }
 
 const isCreatedTask = (task, pastProjects, projectId) => {
-    const pastTasks = pastProjects.find(pastProject => pastProject.id === projectId).tasks
-    const pastTaskIds = pastTasks.map(pastTask => pastTask.id)
-    return !(pastTaskIds.includes(task.id))
+    const pastProject = pastProjects.find(pastProject => pastProject.id === projectId)
+    if (!pastProject) return true
+
+    const pastTaskIds = pastProject.tasks.map(pastTask => pastTask.id)
+    return !(pastTaskIds.includes(task.id))    
 }
 
 const syncProjects = async () => {
