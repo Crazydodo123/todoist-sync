@@ -172,24 +172,9 @@ const syncAllTasks = async () => {
     }
 }
 
-const executeTask = async () => {
-    console.log("Syncing...")
-    await syncProjects()
-    await syncAllTasks()
-    await saveLocalProjects()
-    console.log("Syncing complete")
-}
+await syncProjects()
+await syncAllTasks()
+await saveLocalProjects()
 
-process.stdin.on('keypress', (_, key) => {
-    if (key && key.name == 'q') {
-        console.log('Exiting...')
-        fs.writeFileSync('todo.json', JSON.stringify(PAST_TODO_PROJECTS, null, 2))
-        fs.writeFileSync('google.json', JSON.stringify(PAST_GOOGLE_PROJECTS, null, 2))
-        process.exit()
-    }
-})
-
-await executeTask()
-setInterval(executeTask, 20000)
-
-
+fs.writeFileSync('todo.json', JSON.stringify(PAST_TODO_PROJECTS, null, 2))
+fs.writeFileSync('google.json', JSON.stringify(PAST_GOOGLE_PROJECTS, null, 2))
