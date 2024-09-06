@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import todo from "./todo.mjs"
 import google from "./google.mjs"
 
@@ -184,6 +186,15 @@ const syncAllTasks = async () => {
     }
 }
 
+console.log(`${new Date().toISOString()} Syncing Projects`)
+await syncProjects()
+console.log(`${new Date().toISOString()} Syncing Tasks`)
+await syncAllTasks()
+console.log(`${new Date().toISOString()} Saving Projects`)
+await saveLocalProjects()
+fs.writeFileSync('todo.json', JSON.stringify(PAST_TODO_PROJECTS, null, 2))
+fs.writeFileSync('google.json', JSON.stringify(PAST_GOOGLE_PROJECTS, null, 2))
+
 setInterval(async () => {
     console.log(`${new Date().toISOString()} Syncing Projects`)
     await syncProjects()
@@ -193,4 +204,4 @@ setInterval(async () => {
     await saveLocalProjects()
     fs.writeFileSync('todo.json', JSON.stringify(PAST_TODO_PROJECTS, null, 2))
     fs.writeFileSync('google.json', JSON.stringify(PAST_GOOGLE_PROJECTS, null, 2))
-}, 1000 * 60 * 60)
+}, 1000 * 60)
