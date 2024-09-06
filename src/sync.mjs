@@ -197,4 +197,4 @@ const syncAllTasks = async () => {
 syncAllTasks()
 setInterval(async () => {
     syncAllTasks()
-}, 1000 * 60 * 60)
+}, 1000 * 60)
