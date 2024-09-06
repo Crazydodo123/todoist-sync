@@ -30,6 +30,9 @@ const saveLocalProjects = async () => {
     PAST_TODO_PROJECTS = todoProjects
     PAST_GOOGLE_PROJECTS = googleProjects
 
+    fs.writeFileSync('todo.json', JSON.stringify(PAST_TODO_PROJECTS, null, 2))
+    fs.writeFileSync('google.json', JSON.stringify(PAST_GOOGLE_PROJECTS, null, 2))
+
     return todoProjects, googleProjects
 }
 
@@ -178,30 +181,20 @@ const syncTasksForProject = async (name) => {
 }
 
 const syncAllTasks = async () => {
+    console.log(`${new Date().toISOString()} Syncing Projects`)
     const projects = await syncProjects()
-    const projectNames = projects.map(project => project.name)
 
+    console.log(`${new Date().toISOString()} Syncing Tasks`)
+    const projectNames = projects.map(project => project.name)
     for (const projectName of projectNames) {
         await syncTasksForProject(projectName)
     }
-}
 
-console.log(`${new Date().toISOString()} Syncing Projects`)
-await syncProjects()
-console.log(`${new Date().toISOString()} Syncing Tasks`)
-await syncAllTasks()
-console.log(`${new Date().toISOString()} Saving Projects`)
-await saveLocalProjects()
-fs.writeFileSync('todo.json', JSON.stringify(PAST_TODO_PROJECTS, null, 2))
-fs.writeFileSync('google.json', JSON.stringify(PAST_GOOGLE_PROJECTS, null, 2))
-
-setInterval(async () => {
-    console.log(`${new Date().toISOString()} Syncing Projects`)
-    await syncProjects()
-    console.log(`${new Date().toISOString()} Syncing Tasks`)
-    await syncAllTasks()
     console.log(`${new Date().toISOString()} Saving Projects`)
     await saveLocalProjects()
-    fs.writeFileSync('todo.json', JSON.stringify(PAST_TODO_PROJECTS, null, 2))
-    fs.writeFileSync('google.json', JSON.stringify(PAST_GOOGLE_PROJECTS, null, 2))
-}, 1000 * 60)
+}
+
+syncAllTasks()
+setInterval(async () => {
+    syncAllTasks()
+}, 1000 * 60 * 60)
