@@ -61,8 +61,10 @@ const syncProjects = async () => {
         if (!googleProjectNames.includes(todoProject.name)) {
 
             if (isCreatedProject(todoProject, PAST_TODO_PROJECTS)) {
+                console.log(`Creating project ${todoProject.name} on Google`)
                 await google.addProject(todoProject.name)
             } else {
+                console.log(`Deleting project ${todoProject.name} on Todoist`)
                 await todo.deleteProject(todoProject)
             }
 
@@ -73,8 +75,10 @@ const syncProjects = async () => {
     for (const googleProject of googleProjects) {
         if (!todoProjectNames.includes(googleProject.title)) {
             if (isCreatedProject(googleProject, PAST_GOOGLE_PROJECTS)) {
+                console.log(`Creating project ${googleProject.title} on Todoist`)
                 await todo.addProject(googleProject.title)
             } else {
+                console.log(`Deleting project ${googleProject.title} on Google`)
                 await google.deleteProject(googleProject)
             }
         }
@@ -88,20 +92,24 @@ const syncTasks = async (todoTask, googleTask, googleProject) => {
         const pastGoogleTask = await google.findTaskByTaskName(googleTask.title, googleProject.id, PAST_GOOGLE_PROJECTS)
         if (!pastGoogleTask || googleTask.notes === pastGoogleTask.notes) {
             const updatedGoogleTask = { ...googleTask, notes: todoTask.description }
+            console.log(`Updating the description of ${updatedGoogleTask.title} on Google`)
             await google.updateTask(updatedGoogleTask, googleProject) 
         } else {
             const updatedTodoTask = { ...todoTask, description: todoTask.notes }
+            console.log(`Updating the description of ${updatedTodoTask.content} on Todoist`)
             await todo.updateTask(updatedTodoTask) 
         }
     }
 
-    if (googleTask.due !== (todoTask.due ? new Date(todoTask.due.date).toISOString() : null)) {
+    if (googleTask.due !== (todoTask.due ? new Date(todoTask.due.date).toISOString() : undefined)) {
         const pastGoogleTask = await google.findTaskByTaskName(googleTask.title, googleProject.id, PAST_GOOGLE_PROJECTS)
         if (!pastGoogleTask || googleTask.due === pastGoogleTask.due) {
-            const updatedGoogleTask = { ...googleTask, due: todoTask.due ? new Date(todoTask.due.date).toISOString() : null }
+            const updatedGoogleTask = { ...googleTask, due: todoTask.due ? new Date(todoTask.due.date).toISOString() : undefined }
+            console.log(`Updating the due date of ${updatedGoogleTask.title} on Google`)
             await google.updateTask(updatedGoogleTask, googleProject) 
         } else {
-            const updatedTodoTask = { ...todoTask, due: googleTask.due ? String(googleTask.due).slice(0, 10) : null }
+            const updatedTodoTask = { ...todoTask, due: googleTask.due ? String(googleTask.due).slice(0, 10) : undefined }
+            console.log(`Updating the due date of ${updatedTodoTask.content} on Todoist`)
             await todo.updateTask(updatedTodoTask)
         }
     }
@@ -122,18 +130,21 @@ const syncTasksForProject = async (name) => {
     for (const todoTask of todoTasks) {
         if (!googleTasksNames.includes(todoTask.content)) {
             if (isCreatedTask(todoTask, PAST_TODO_PROJECTS, todoProject.id)) {
+                console.log(`Adding ${todoTask.content} on Google`)
                 await google.addTaskToProject({
                     title: todoTask.content,
                     notes: todoTask.description,
                     status: todoTask.isCompleted ? "completed" : "needsAction",
-                    due: todoTask.due ? new Date(todoTask.due.date).toISOString() : null
+                    due: todoTask.due ? new Date(todoTask.due.date).toISOString() : undefined
                 }, googleProject.id)
             } else {
                 const pastGoogleTask = await google.findTaskByTaskName(todoTask.content, googleProject.id, PAST_GOOGLE_PROJECTS)
                 
                 if (pastGoogleTask && await google.checkCompleted(pastGoogleTask, googleProject)) {
+                    console.log(`Completing ${todoTask.content} on Todoist`)
                     await todo.completeTask(todoTask)
                 } else {
+                    console.log(`Deleting ${todoTask.content} on Todoist`)
                     await todo.deleteTask(todoTask)
                 }
             }
@@ -148,17 +159,20 @@ const syncTasksForProject = async (name) => {
     for (const googleTask of googleTasks) {
         if (!todoTasksNames.includes(googleTask.title)) {
             if (isCreatedTask(googleTask, PAST_GOOGLE_PROJECTS, googleProject.id)) {
+                console.log(`Adding ${googleTask.title} on Todoist`)
                 await todo.addTaskToProject({
                     content: googleTask.title,
                     description: googleTask.notes,
                     isCompleted: googleTask.status === "completed",
-                    due_date: googleTask.due ? String(googleTask.due).slice(0, 10) : null
+                    due_date: googleTask.due ? String(googleTask.due).slice(0, 10) : undefined
                 }, todoProject.id)
             } else {
                 const pastTodoTask = await todo.findTaskByTaskName(googleTask.title, todoProject.id, PAST_TODO_PROJECTS)
                 if (pastTodoTask && await todo.checkCompleted(pastTodoTask, todoProject)) {
+                    console.log(`Completing ${googleTask.title} on Google`)
                     await google.completeTask(googleTask, googleProject)
                 } else {
+                    console.log(`Deleting ${googleTask.title} on Google`)
                     await google.deleteTask(googleTask, googleProject)
                 }
             }
@@ -197,4 +211,4 @@ const syncAllTasks = async () => {
 syncAllTasks()
 setInterval(async () => {
     syncAllTasks()
-}, 1000 * 60)
+}, 1000 * 10)

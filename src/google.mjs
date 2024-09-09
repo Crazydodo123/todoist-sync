@@ -29,7 +29,6 @@ const getProjects = async () => {
             headers: {"Authorization" : `Bearer ${process.env.ACCESS_TOKEN}`}
         })
         return response.data.items
-
     } catch {
         await refreshAccessToken()
         const response = await axios.get("https://tasks.googleapis.com/tasks/v1/users/@me/lists", {
@@ -118,4 +117,4 @@ const deleteTask = async (task, project) => {
     return response.data
 }
 
-export default { refreshAccessToken, getProjects, addProject, deleteProject, getTasksFromProjectId, getTasksFromProjectName, addTaskToProject, checkCompleted, findTaskByTaskName, completeTask, updateTask, deleteTask }
+export default { getProjects, addProject, deleteProject, getTasksFromProjectId, getTasksFromProjectName, addTaskToProject, checkCompleted, findTaskByTaskName, completeTask, updateTask, deleteTask }
